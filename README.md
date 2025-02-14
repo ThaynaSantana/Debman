@@ -6,4 +6,4 @@ Instalador de ficheiros .deb para sitemas linux com base debian
 
 ## Technologies:
 - Python
-- tkinter
+- PyQt6
