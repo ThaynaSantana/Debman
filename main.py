@@ -21,7 +21,7 @@ class DebmanApp(QWidget):
         # Titulo do app
         self.title = QLabel("Debman")
         self.title.setFont(QFont("Arial", 16))
-        self.title.setStyleSheet("color: #fafafa; background-color: #d96d62; font-weight: bold; padding: 12px;")
+        self.title.setStyleSheet("color: #fafafa; font-weight: bold; padding: 12px;")
         self.title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.title)
         
