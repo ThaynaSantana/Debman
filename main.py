@@ -2,15 +2,16 @@ import sys
 import subprocess
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QPushButton, QTextEdit, 
-    QFileDialog, QLabel, QInputDialog, QPushButton, QVBoxLayout
+    QFileDialog, QLabel, QInputDialog, QPushButton, QVBoxLayout,
 )
-from PyQt6.QtGui import QPalette, QColor, QFont, QDesktopServices
+from PyQt6.QtGui import QPalette, QColor, QFont, QDesktopServices, QIcon
 from PyQt6.QtCore import Qt, QUrl
 
 class DebmanApp(QWidget):
     def __init__(self):
         super().__init__()
 
+        self.setWindowIcon(QIcon("icone.jpeg"))
         self.setWindowTitle("Debman - Gerenciador de Pacotes .deb")
         self.setGeometry(100, 100, 500, 300)
         self.init_ui()
@@ -108,6 +109,7 @@ class DebmanApp(QWidget):
         }
         """
 
+    # Função de INSTALAR
     def instalar_deb(self):
         arquivo, _ = QFileDialog.getOpenFileName(self, "Selecionar Pacote .deb", "", "Pacotes .deb (*.deb)")
         if not arquivo:
@@ -118,7 +120,7 @@ class DebmanApp(QWidget):
     
         try:
             process = subprocess.Popen(
-                ["sudo", "dpkg", "-i", arquivo],
+                ["pkexec", "dpkg", "-i", arquivo],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True
@@ -140,7 +142,7 @@ class DebmanApp(QWidget):
         except Exception as e:
             self.logs.append(f"\n❌ Erro ao tentar instalar: {str(e)}\n")
 
-
+    # Função de DESISNTALAR
     def remover_deb(self):
         pacote, ok = QInputDialog.getText(self, "Remover Pacote", "Digite o nome do pacote para remover:")
         
@@ -149,7 +151,7 @@ class DebmanApp(QWidget):
             return
     
         # Verifica se o pacote está instalado
-        status = subprocess.run(["dpkg", "-l", pacote], capture_output=True, text=True)
+        status = subprocess.run(["apt", "list", pacote], capture_output=True, text=True)
         if pacote not in status.stdout:
             self.logs.append(f"\n❌ O pacote '{pacote}' não está instalado.\n")
             return
@@ -161,16 +163,24 @@ class DebmanApp(QWidget):
         if not ok:
             return
     
-        comando = ["sudo", "dpkg", "--remove", pacote] if resposta.startswith("Remover") else ["sudo", "dpkg", "--purge", pacote]
+        comando = ["pkexec", "apt", "remove", pacote] if resposta.startswith("Remover") else ["pkexec", "apt", "remove --purge", pacote]
     
         self.logs.append(f"\n🔄 Removendo o pacote: {pacote} ({'Purge' if 'Purge' in resposta else 'Remove'})\n")
     
         try:
-            process = subprocess.Popen(comando, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    
-            for linha in process.stdout:
+            process = subprocess.Popen(
+                comando,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1
+            )
+
+            for linha in iter(process.stdout.readline, ''):
                 self.logs.append(linha.strip())
-    
+                self.logs.repaint()
+
+            process.stdout.close()
             process.wait()
     
             if process.returncode == 0:
